@@ -353,8 +353,7 @@ function add_to_cron(){
   delete_file_if_exists $cron_script_path;
 
   # Add startup script to cron (job sheduler) to restart proxy server after reboot and rotate proxy pool
-  echo "@reboot $bash_location $startup_script_path" > $cron_script_path;
-  if [ $rotating_interval -ne 0 ]; then echo "*/$rotating_interval * * * * $bash_location while true; do $startup_script_path; sleep 30; done" >> "$cron_script_path"; fi;
+  echo "@reboot $bash_location while true; do $startup_script_path; sleep $rotating_interval; done" > $cron_script_path;
 
   # Add existing cron rules (not related to this proxy server) to cron script, so that they are not removed
   # https://unix.stackexchange.com/questions/21297/how-do-i-add-an-entry-to-my-crontab
