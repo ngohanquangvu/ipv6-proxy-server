@@ -352,23 +352,22 @@ function configure_ipv6(){
 function add_to_cron(){
   delete_file_if_exists $cron_script_path;
 
-  # Add startup script to cron (job sheduler) to restart proxy server after reboot and rotate proxy pool
-  echo "@reboot $bash_location while true; do $startup_script_path; sleep $rotating_interval; done" > $cron_script_path;
+  # Add startup script to an infinite loop with a 10 second sleep interval
+  echo -e "#!/bin/bash\nwhile true; do\n  $bash_location $startup_script_path\n  sleep 10\ndone" > $cron_script_path;
+  chmod +x $cron_script_path;
 
-  # Add existing cron rules (not related to this proxy server) to cron script, so that they are not removed
-  # https://unix.stackexchange.com/questions/21297/how-do-i-add-an-entry-to-my-crontab
-  crontab -l | grep -v $startup_script_path >> $cron_script_path;
+  # Add startup script to cron (job scheduler) to restart proxy server after reboot
+  (crontab -l 2>/dev/null; echo "@reboot $cron_script_path") | crontab -
 
-  crontab $cron_script_path;
+  # Restart cron service
   systemctl restart cron;
 
-  if crontab -l | grep -q $startup_script_path; then 
+  if crontab -l | grep -q $cron_script_path; then 
     echo "Proxy startup script added to cron autorun successfully";
   else
     log_err "Warning: adding script to cron autorun failed.";
   fi;
 }
-
 function remove_from_cron(){
   # Delete all occurencies of proxy script in crontab
   crontab -l | grep -v $startup_script_path > $cron_script_path;
